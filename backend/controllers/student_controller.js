@@ -1,16 +1,28 @@
 const bcrypt = require('bcrypt');
 const Student = require('../models/studentSchema.js');
+const { signToken } = require('../utils/token');
+const { sendValidationError } = require('../dto/validate');
+const {
+    studentRegisterDto,
+    updateStudentDto,
+    examResultDto,
+    studentAttendanceDto,
+    removeSubjectAttendanceDto,
+} = require('../dto/studentDto');
 const Subject = require('../models/subjectSchema.js');
 
 const studentRegister = async (req, res) => {
     try {
+        const data = sendValidationError(res, studentRegisterDto(req.body));
+        if (!data) return;
+
         const salt = await bcrypt.genSalt(10);
-        const hashedPass = await bcrypt.hash(req.body.password, salt);
+        const hashedPass = await bcrypt.hash(data.password, salt);
 
         const existingStudent = await Student.findOne({
-            rollNum: req.body.rollNum,
-            school: req.body.adminID,
-            sclassName: req.body.sclassName,
+            rollNum: data.rollNum,
+            school: req.user.schoolId,
+            sclassName: data.sclassName,
         });
 
         if (existingStudent) {
@@ -18,9 +30,12 @@ const studentRegister = async (req, res) => {
         }
         else {
             const student = new Student({
-                ...req.body,
-                school: req.body.adminID,
-                password: hashedPass
+                name: data.name,
+                rollNum: data.rollNum,
+                password: hashedPass,
+                sclassName: data.sclassName,
+                school: req.user.schoolId,
+                role: 'Student'
             });
 
             let result = await student.save();
@@ -41,10 +56,18 @@ const studentLogIn = async (req, res) => {
             if (validated) {
                 student = await student.populate("school", "schoolName")
                 student = await student.populate("sclassName", "sclassName")
-                student.password = undefined;
-                student.examResult = undefined;
-                student.attendance = undefined;
-                res.send(student);
+                const token = signToken(student._id, 'Student');
+                res.send({
+                    token,
+                    user: {
+                        _id: student._id,
+                        name: student.name,
+                        rollNum: student.rollNum,
+                        sclassName: student.sclassName,
+                        school: student.school,
+                        role: 'Student'
+                    }
+                });
             } else {
                 res.send({ message: "Invalid password" });
             }
@@ -128,12 +151,19 @@ const deleteStudentsByClass = async (req, res) => {
 
 const updateStudent = async (req, res) => {
     try {
-        if (req.body.password) {
-            const salt = await bcrypt.genSalt(10)
-            res.body.password = await bcrypt.hash(res.body.password, salt)
+        const data = sendValidationError(res, updateStudentDto(req.body));
+        if (!data) return;
+
+        const update = {
+            name: data.name,
+            rollNum: data.rollNum,
+        };
+        if (data.password) {
+            const salt = await bcrypt.genSalt(10);
+            update.password = await bcrypt.hash(data.password, salt);
         }
         let result = await Student.findByIdAndUpdate(req.params.id,
-            { $set: req.body },
+            { $set: update },
             { new: true })
 
         result.password = undefined;
@@ -144,7 +174,9 @@ const updateStudent = async (req, res) => {
 }
 
 const updateExamResult = async (req, res) => {
-    const { subName, marksObtained } = req.body;
+    const data = sendValidationError(res, examResultDto(req.body));
+    if (!data) return;
+    const { subName, marksObtained } = data;
 
     try {
         const student = await Student.findById(req.params.id);
@@ -171,7 +203,9 @@ const updateExamResult = async (req, res) => {
 };
 
 const studentAttendance = async (req, res) => {
-    const { subName, status, date } = req.body;
+    const data = sendValidationError(res, studentAttendanceDto(req.body));
+    if (!data) return;
+    const { subName, status, date } = data;
 
     try {
         const student = await Student.findById(req.params.id);
@@ -240,8 +274,10 @@ const clearAllStudentsAttendance = async (req, res) => {
 };
 
 const removeStudentAttendanceBySubject = async (req, res) => {
+    const data = sendValidationError(res, removeSubjectAttendanceDto(req.body));
+    if (!data) return;
     const studentId = req.params.id;
-    const subName = req.body.subId
+    const subName = data.subId
 
     try {
         const result = await Student.updateOne(

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../axiosInstance';
 import {
     authRequest,
     stuffAdded,
@@ -20,7 +20,7 @@ export const loginUser = (fields, role) => async (dispatch) => {
         const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/${role}Login`, fields, {
             headers: { 'Content-Type': 'application/json' },
         });
-        if (result.data.role) {
+        if (result.data.token && result.data.user?.role) {
             dispatch(authSuccess(result.data));
         } else {
             dispatch(authFailed(result.data.message));
@@ -37,7 +37,7 @@ export const registerUser = (fields, role) => async (dispatch) => {
         const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/${role}Reg`, fields, {
             headers: { 'Content-Type': 'application/json' },
         });
-        if (result.data.schoolName) {
+        if (result.data.token && result.data.user?.schoolName) {
             dispatch(authSuccess(result.data));
         }
         else if (result.data.school) {
