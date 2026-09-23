@@ -17,7 +17,17 @@ dotenv.config();
 app.use(securityHeaders)
 app.use(express.json({ limit: '10mb' }))
 app.use(cors({
-  exposedHeaders: ['X-XSS-Input-Sanitized', 'Content-Security-Policy'],
+  exposedHeaders: [
+    'X-XSS-Input-Sanitized',
+    'Content-Security-Policy',
+    'Retry-After',
+    'RateLimit-Limit',
+    'RateLimit-Remaining',
+    'RateLimit-Reset',
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining',
+    'X-RateLimit-Reset',
+  ],
 }))
 
 mongoose
