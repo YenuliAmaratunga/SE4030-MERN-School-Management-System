@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const Admin = require('../models/adminSchema.js');
 const { signToken } = require('../utils/token');
+const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { adminRegisterDto } = require('../dto/adminDto');
 const { sendValidationError } = require('../dto/validate');
 const Sclass = require('../models/sclassSchema.js');
@@ -120,6 +121,7 @@ const adminLogIn = async (req, res) => {
                 }
 
                 if (validated) {
+                    clearLoginFailures(req.loginAccountKey);
                     const token = signToken(admin._id, 'Admin');
                     res.send({
                         token,
@@ -132,13 +134,13 @@ const adminLogIn = async (req, res) => {
                         }
                     });
                 } else {
-                    res.send({ message: "Invalid password" });
+                    return sendFailedLogin(req, res);
                 }
             } else {
-                res.send({ message: "User not found" });
+                return sendFailedLogin(req, res);
             }
         } else {
-            res.send({ message: "Email and password are required" });
+            res.status(400).json({ message: "Email and password are required" });
         }
     } catch (err) {
         res.status(500).json(err);

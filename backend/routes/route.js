@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const authenticate = require('../middleware/authMiddleware');
 const authorize = require('../middleware/authorize');
+const { loginIpLimiter, checkAccountLockout } = require('../middleware/loginLimiter');
 
 // const { adminRegister, adminLogIn, deleteAdmin, getAdminDetail, updateAdmin } = require('../controllers/admin-controller.js');
 
@@ -29,7 +30,7 @@ const { teacherRegister, teacherLogIn, getTeachers, getTeacherDetail, deleteTeac
 
 // Admin
 router.post('/AdminReg', adminRegister);
-router.post('/AdminLogin', adminLogIn);
+router.post('/AdminLogin', loginIpLimiter, checkAccountLockout('Admin'), adminLogIn);
 
 router.get("/Admin/:id", authenticate, authorize('Admin'), getAdminDetail)
 // router.delete("/Admin/:id", deleteAdmin)
@@ -39,7 +40,7 @@ router.get("/Admin/:id", authenticate, authorize('Admin'), getAdminDetail)
 // Student
 
 router.post('/StudentReg', authenticate, authorize('Admin'), studentRegister);
-router.post('/StudentLogin', studentLogIn)
+router.post('/StudentLogin', loginIpLimiter, checkAccountLockout('Student'), studentLogIn);
 
 router.get("/Students/:id", authenticate, authorize('Admin'), getStudents)
 router.get("/Student/:id", authenticate, authorize('Admin', 'Teacher', 'Student'), getStudentDetail)
@@ -63,7 +64,7 @@ router.put('/RemoveStudentAtten/:id', authenticate, authorize('Admin'), removeSt
 // Teacher
 
 router.post('/TeacherReg', authenticate, authorize('Admin'), teacherRegister);
-router.post('/TeacherLogin', teacherLogIn)
+router.post('/TeacherLogin', loginIpLimiter, checkAccountLockout('Teacher'), teacherLogIn);
 
 router.get("/Teachers/:id", authenticate, authorize('Admin'), getTeachers)
 router.get("/Teacher/:id", authenticate, authorize('Admin'), getTeacherDetail)

@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const Teacher = require('../models/teacherSchema.js');
 const { signToken } = require('../utils/token');
+const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
 const {
     teacherRegisterDto,
@@ -45,10 +46,15 @@ const teacherRegister = async (req, res) => {
 
 const teacherLogIn = async (req, res) => {
     try {
+        if (!req.body.email || !req.body.password) {
+            return res.status(400).json({ message: "Email and password are required" });
+        }
+
         let teacher = await Teacher.findOne({ email: req.body.email });
         if (teacher) {
             const validated = await bcrypt.compare(req.body.password, teacher.password);
             if (validated) {
+                clearLoginFailures(req.loginAccountKey);
                 teacher = await teacher.populate("teachSubject", "subName sessions")
                 teacher = await teacher.populate("school", "schoolName")
                 teacher = await teacher.populate("teachSclass", "sclassName")
@@ -66,10 +72,10 @@ const teacherLogIn = async (req, res) => {
                     }
                 });
             } else {
-                res.send({ message: "Invalid password" });
+                return sendFailedLogin(req, res);
             }
         } else {
-            res.send({ message: "Teacher not found" });
+            return sendFailedLogin(req, res);
         }
     } catch (err) {
         res.status(500).json(err);

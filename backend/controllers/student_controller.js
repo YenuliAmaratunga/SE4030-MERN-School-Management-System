@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const Student = require('../models/studentSchema.js');
 const { signToken } = require('../utils/token');
+const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
 const {
     studentRegisterDto,
@@ -50,10 +51,15 @@ const studentRegister = async (req, res) => {
 
 const studentLogIn = async (req, res) => {
     try {
+        if (!req.body.rollNum || !req.body.studentName || !req.body.password) {
+            return res.status(400).json({ message: "Roll number, name and password are required" });
+        }
+
         let student = await Student.findOne({ rollNum: req.body.rollNum, name: req.body.studentName });
         if (student) {
             const validated = await bcrypt.compare(req.body.password, student.password);
             if (validated) {
+                clearLoginFailures(req.loginAccountKey);
                 student = await student.populate("school", "schoolName")
                 student = await student.populate("sclassName", "sclassName")
                 const token = signToken(student._id, 'Student');
@@ -69,10 +75,10 @@ const studentLogIn = async (req, res) => {
                     }
                 });
             } else {
-                res.send({ message: "Invalid password" });
+                return sendFailedLogin(req, res);
             }
         } else {
-            res.send({ message: "Student not found" });
+            return sendFailedLogin(req, res);
         }
     } catch (err) {
         res.status(500).json(err);
