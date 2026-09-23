@@ -121,6 +121,11 @@ export const addStuff = (fields, address) => async (dispatch) => {
             dispatch(stuffAdded(result.data));
         }
     } catch (error) {
-        dispatch(authError(error));
+        const message = error.response?.data?.message;
+        if (message) {
+            dispatch(authFailed(message));
+        } else {
+            dispatch(authError(error));
+        }
     }
 };
