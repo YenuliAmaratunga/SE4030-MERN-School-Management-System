@@ -7,6 +7,7 @@ const initialState = {
     loading: false,
     currentUser: JSON.parse(localStorage.getItem('user')) || null,
     currentRole: (JSON.parse(localStorage.getItem('user')) || {}).role || null,
+    token: localStorage.getItem('token') || null,
     error: null,
     response: null,
     darkMode: true
@@ -31,9 +32,11 @@ const userSlice = createSlice({
         },
         authSuccess: (state, action) => {
             state.status = 'success';
-            state.currentUser = action.payload;
-            state.currentRole = action.payload.role;
-            localStorage.setItem('user', JSON.stringify(action.payload));
+            state.currentUser = action.payload.user;
+            state.currentRole = action.payload.user.role;
+            state.token = action.payload.token;
+            localStorage.setItem('user', JSON.stringify(action.payload.user));
+            localStorage.setItem('token', action.payload.token);
             state.response = null;
             state.error = null;
         },
@@ -47,7 +50,9 @@ const userSlice = createSlice({
         },
         authLogout: (state) => {
             localStorage.removeItem('user');
+            localStorage.removeItem('token');
             state.currentUser = null;
+            state.token = null;
             state.status = 'idle';
             state.error = null;
             state.currentRole = null

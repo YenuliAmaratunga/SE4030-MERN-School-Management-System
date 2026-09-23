@@ -1,8 +1,18 @@
 const Complain = require('../models/complainSchema.js');
+const { complainCreateDto } = require('../dto/complainDto');
+const { sendValidationError } = require('../dto/validate');
 
 const complainCreate = async (req, res) => {
     try {
-        const complain = new Complain(req.body)
+        const data = sendValidationError(res, complainCreateDto(req.body));
+        if (!data) return;
+
+        const complain = new Complain({
+            date: data.date,
+            complaint: data.complaint,
+            user: req.user.id,
+            school: req.user.schoolId
+        })
         const result = await complain.save()
         res.send(result)
     } catch (err) {

@@ -1,5 +1,8 @@
 const bcrypt = require('bcrypt');
 const Admin = require('../models/adminSchema.js');
+const { signToken } = require('../utils/token');
+const { adminRegisterDto } = require('../dto/adminDto');
+const { sendValidationError } = require('../dto/validate');
 const Sclass = require('../models/sclassSchema.js');
 const Student = require('../models/studentSchema.js');
 const Teacher = require('../models/teacherSchema.js');
@@ -55,14 +58,26 @@ const Complain = require('../models/complainSchema.js');
 //     }
 // };
 
+const isBcryptHash = (value) => typeof value === 'string' && /^\$2[aby]\$/.test(value);
+
 const adminRegister = async (req, res) => {
     try {
+        const data = sendValidationError(res, adminRegisterDto(req.body));
+        if (!data) return;
+
+        const salt = await bcrypt.genSalt(10);
+        const password = await bcrypt.hash(data.password, salt);
+
         const admin = new Admin({
-            ...req.body
+            name: data.name,
+            email: data.email,
+            password,
+            schoolName: data.schoolName,
+            role: 'Admin'
         });
 
-        const existingAdminByEmail = await Admin.findOne({ email: req.body.email });
-        const existingSchool = await Admin.findOne({ schoolName: req.body.schoolName });
+        const existingAdminByEmail = await Admin.findOne({ email: data.email });
+        const existingSchool = await Admin.findOne({ schoolName: data.schoolName });
 
         if (existingAdminByEmail) {
             res.send({ message: 'Email already exists' });
@@ -72,8 +87,17 @@ const adminRegister = async (req, res) => {
         }
         else {
             let result = await admin.save();
-            result.password = undefined;
-            res.send(result);
+            const token = signToken(result._id, 'Admin');
+            res.send({
+                token,
+                user: {
+                    _id: result._id,
+                    name: result.name,
+                    email: result.email,
+                    schoolName: result.schoolName,
+                    role: 'Admin'
+                }
+            });
         }
     } catch (err) {
         res.status(500).json(err);
@@ -81,20 +105,43 @@ const adminRegister = async (req, res) => {
 };
 
 const adminLogIn = async (req, res) => {
-    if (req.body.email && req.body.password) {
-        let admin = await Admin.findOne({ email: req.body.email });
-        if (admin) {
-            if (req.body.password === admin.password) {
-                admin.password = undefined;
-                res.send(admin);
+    try {
+        if (req.body.email && req.body.password) {
+            let admin = await Admin.findOne({ email: req.body.email });
+            if (admin) {
+                let validated = false;
+                if (isBcryptHash(admin.password)) {
+                    validated = await bcrypt.compare(req.body.password, admin.password);
+                } else if (req.body.password === admin.password) {
+                    const salt = await bcrypt.genSalt(10);
+                    admin.password = await bcrypt.hash(req.body.password, salt);
+                    await admin.save();
+                    validated = true;
+                }
+
+                if (validated) {
+                    const token = signToken(admin._id, 'Admin');
+                    res.send({
+                        token,
+                        user: {
+                            _id: admin._id,
+                            name: admin.name,
+                            email: admin.email,
+                            schoolName: admin.schoolName,
+                            role: 'Admin'
+                        }
+                    });
+                } else {
+                    res.send({ message: "Invalid password" });
+                }
             } else {
-                res.send({ message: "Invalid password" });
+                res.send({ message: "User not found" });
             }
         } else {
-            res.send({ message: "User not found" });
+            res.send({ message: "Email and password are required" });
         }
-    } else {
-        res.send({ message: "Email and password are required" });
+    } catch (err) {
+        res.status(500).json(err);
     }
 };
 

@@ -1,10 +1,17 @@
 const Notice = require('../models/noticeSchema.js');
+const { noticeCreateDto, noticeUpdateDto } = require('../dto/noticeDto');
+const { sendValidationError } = require('../dto/validate');
 
 const noticeCreate = async (req, res) => {
     try {
+        const data = sendValidationError(res, noticeCreateDto(req.body));
+        if (!data) return;
+
         const notice = new Notice({
-            ...req.body,
-            school: req.body.adminID
+            title: data.title,
+            details: data.details,
+            date: data.date,
+            school: req.user.schoolId
         })
         const result = await notice.save()
         res.send(result)
@@ -28,8 +35,11 @@ const noticeList = async (req, res) => {
 
 const updateNotice = async (req, res) => {
     try {
+        const data = sendValidationError(res, noticeUpdateDto(req.body));
+        if (!data) return;
+
         const result = await Notice.findByIdAndUpdate(req.params.id,
-            { $set: req.body },
+            { $set: { title: data.title, details: data.details, date: data.date } },
             { new: true })
         res.send(result)
     } catch (error) {
