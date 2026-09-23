@@ -2,6 +2,7 @@ const express = require("express")
 const cors = require("cors")
 const mongoose = require("mongoose")
 const dotenv = require("dotenv")
+const securityHeaders = require("./middleware/securityHeaders.js")
 // const bodyParser = require("body-parser")
 const app = express()
 const Routes = require("./routes/route.js")
@@ -13,8 +14,11 @@ dotenv.config();
 // app.use(bodyParser.json({ limit: '10mb', extended: true }))
 // app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }))
 
+app.use(securityHeaders)
 app.use(express.json({ limit: '10mb' }))
-app.use(cors())
+app.use(cors({
+  exposedHeaders: ['X-XSS-Input-Sanitized', 'Content-Security-Policy'],
+}))
 
 mongoose
     .connect(process.env.MONGO_URL, {
