@@ -1,5 +1,7 @@
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const Student = require('../models/studentSchema.js');
+const Teacher = require('../models/teacherSchema.js');
 const { signToken } = require('../utils/token');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
@@ -103,18 +105,48 @@ const getStudents = async (req, res) => {
 
 const getStudentDetail = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
         let student = await Student.findById(req.params.id)
             .populate("school", "schoolName")
             .populate("sclassName", "sclassName")
             .populate("examResult.subName", "subName")
             .populate("attendance.subName", "subName sessions");
-        if (student) {
-            student.password = undefined;
-            res.send(student);
+
+        if (!student) {
+            return res.status(404).json({ message: "No student found" });
         }
-        else {
-            res.send({ message: "No student found" });
+
+        // Context-Aware Attribute-Based Access Control (ABAC) Guard - CWE-639 / BOLA
+        const requesterId = req.user?.id || req.user?._id?.toString();
+        const requesterRole = req.user?.role;
+
+        // 1. Student self-access: student can only access their own record
+        const isSelf = requesterRole === 'Student' && requesterId === student._id.toString();
+
+        // 2. Assigned class teacher access: teacher must teach the student's assigned class
+        let isAssignedTeacher = false;
+        if (requesterRole === 'Teacher') {
+            const teacher = await Teacher.findById(requesterId);
+            const studentClassId = student.sclassName?._id || student.sclassName;
+            if (teacher && teacher.teachSclass && studentClassId && teacher.teachSclass.toString() === studentClassId.toString()) {
+                isAssignedTeacher = true;
+            }
         }
+
+        // 3. School admin access: admin must belong to the same school
+        const studentSchoolId = (student.school?._id || student.school)?.toString();
+        const isSchoolAdmin = requesterRole === 'Admin' && req.user?.schoolId === studentSchoolId;
+
+        // Verify authorization boundaries
+        if (!isSelf && !isAssignedTeacher && !isSchoolAdmin) {
+            return res.status(403).json({ message: "Access forbidden: You do not have permission to view this student profile" });
+        }
+
+        student.password = undefined;
+        res.send(student);
     } catch (err) {
         res.status(500).json(err);
     }
