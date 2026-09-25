@@ -3,6 +3,7 @@ const cors = require("cors")
 const mongoose = require("mongoose")
 const dotenv = require("dotenv")
 const securityHeaders = require("./middleware/securityHeaders.js")
+const mongoSanitize = require("express-mongo-sanitize")
 // const bodyParser = require("body-parser")
 const app = express()
 const Routes = require("./routes/route.js")
@@ -16,6 +17,15 @@ dotenv.config();
 
 app.use(securityHeaders)
 app.use(express.json({ limit: '10mb' }))
+
+// Sanitize incoming payloads to neutralize NoSQL Operator Injection (CWE-943)
+app.use(mongoSanitize({
+    replaceWith: '_',
+    onSanitize: ({ req, key }) => {
+        console.warn(`[SECURITY] Stripped forbidden NoSQL query operator key '${key}' from ${req.ip}`);
+    }
+}))
+
 app.use(cors({
   exposedHeaders: [
     'X-XSS-Input-Sanitized',
