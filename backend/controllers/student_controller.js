@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
+const { setAuthCookies } = require('../utils/authCookies.js');
 const Student = require('../models/studentSchema.js');
-const { signToken } = require('../utils/token');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
 const {
@@ -62,9 +62,8 @@ const studentLogIn = async (req, res) => {
                 clearLoginFailures(req.loginAccountKey);
                 student = await student.populate("school", "schoolName")
                 student = await student.populate("sclassName", "sclassName")
-                const token = signToken(student._id, 'Student');
+                setAuthCookies(res, student);
                 res.send({
-                    token,
                     user: {
                         _id: student._id,
                         name: student.name,

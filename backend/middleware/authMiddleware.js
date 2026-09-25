@@ -11,12 +11,9 @@ const modelsByRole = {
 
 const authenticate = async (req, res, next) => {
     const header = req.headers.authorization;
+    const bearer = header && header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+    const token = (req.cookies && req.cookies.accessToken) || bearer;
 
-    if (!header || !header.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const token = header.slice(7).trim();
     if (!token) {
         return res.status(401).json({ message: 'Authentication required' });
     }

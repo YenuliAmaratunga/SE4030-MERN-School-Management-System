@@ -27,10 +27,16 @@ const {
     removeStudentAttendance } = require('../controllers/student_controller.js');
 const { subjectCreate, classSubjects, deleteSubjectsByClass, getSubjectDetail, deleteSubject, freeSubjectList, allSubjects, deleteSubjects } = require('../controllers/subject-controller.js');
 const { teacherRegister, teacherLogIn, getTeachers, getTeacherDetail, deleteTeachers, deleteTeachersByClass, deleteTeacher, updateTeacherSubject, teacherAttendance } = require('../controllers/teacher-controller.js');
+const { me, refresh, logout } = require('../controllers/auth-controller.js');
 
-// Admin
+// Public auth
 router.post('/AdminReg', adminRegister);
 router.post('/AdminLogin', loginIpLimiter, checkAccountLockout('Admin'), adminLogIn);
+router.post('/StudentLogin', loginIpLimiter, checkAccountLockout('Student'), studentLogIn);
+router.post('/TeacherLogin', loginIpLimiter, checkAccountLockout('Teacher'), teacherLogIn);
+router.post('/auth/refresh', refresh);
+router.post('/auth/logout', logout);
+router.get('/auth/me', authenticate, me);
 
 router.get("/Admin/:id", authenticate, authorize('Admin'), getAdminDetail)
 // router.delete("/Admin/:id", deleteAdmin)
@@ -40,7 +46,6 @@ router.get("/Admin/:id", authenticate, authorize('Admin'), getAdminDetail)
 // Student
 
 router.post('/StudentReg', authenticate, authorize('Admin'), studentRegister);
-router.post('/StudentLogin', loginIpLimiter, checkAccountLockout('Student'), studentLogIn);
 
 router.get("/Students/:id", authenticate, authorize('Admin'), getStudents)
 router.get("/Student/:id", authenticate, authorize('Admin', 'Teacher', 'Student'), getStudentDetail)
@@ -64,7 +69,6 @@ router.put('/RemoveStudentAtten/:id', authenticate, authorize('Admin'), removeSt
 // Teacher
 
 router.post('/TeacherReg', authenticate, authorize('Admin'), teacherRegister);
-router.post('/TeacherLogin', loginIpLimiter, checkAccountLockout('Teacher'), teacherLogIn);
 
 router.get("/Teachers/:id", authenticate, authorize('Admin'), getTeachers)
 router.get("/Teacher/:id", authenticate, authorize('Admin'), getTeacherDetail)
