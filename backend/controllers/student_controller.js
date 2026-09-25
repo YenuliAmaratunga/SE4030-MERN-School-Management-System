@@ -141,8 +141,9 @@ const getStudentDetail = async (req, res) => {
         const isSchoolAdmin = requesterRole === 'Admin' && req.user?.schoolId === studentSchoolId;
 
         // Verify authorization boundaries
+        // Standardize unauthorized entity responses to generic 404 Not Found to prevent identifier enumeration (CWE-200)
         if (!isSelf && !isAssignedTeacher && !isSchoolAdmin) {
-            return res.status(403).json({ message: "Access forbidden: You do not have permission to view this student profile" });
+            return res.status(404).json({ message: "No student found" });
         }
 
         student.password = undefined;
