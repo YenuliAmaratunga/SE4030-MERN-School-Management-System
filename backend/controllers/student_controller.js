@@ -3,6 +3,7 @@ const Student = require('../models/studentSchema.js');
 const { signToken } = require('../utils/token');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
+const { studentLoginSchema, validateLoginBody } = require('../dto/loginDto');
 const {
     studentRegisterDto,
     updateStudentDto,
@@ -51,13 +52,12 @@ const studentRegister = async (req, res) => {
 
 const studentLogIn = async (req, res) => {
     try {
-        if (!req.body.rollNum || !req.body.studentName || !req.body.password) {
-            return res.status(400).json({ message: "Roll number, name and password are required" });
-        }
+        const data = validateLoginBody(studentLoginSchema, req.body, res);
+        if (!data) return;
 
-        let student = await Student.findOne({ rollNum: req.body.rollNum, name: req.body.studentName });
+        let student = await Student.findOne({ rollNum: data.rollNum, name: data.studentName });
         if (student) {
-            const validated = await bcrypt.compare(req.body.password, student.password);
+            const validated = await bcrypt.compare(data.password, student.password);
             if (validated) {
                 clearLoginFailures(req.loginAccountKey);
                 student = await student.populate("school", "schoolName")

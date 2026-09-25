@@ -23,6 +23,7 @@
     "jsdom": "^22.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.0.4",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "zod": "^4.6.5"
   }
 }

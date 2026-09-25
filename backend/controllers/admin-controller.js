@@ -3,6 +3,7 @@ const Admin = require('../models/adminSchema.js');
 const { signToken } = require('../utils/token');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { adminRegisterDto } = require('../dto/adminDto');
+const { adminLoginSchema, validateLoginBody } = require('../dto/loginDto');
 const { sendValidationError } = require('../dto/validate');
 const Sclass = require('../models/sclassSchema.js');
 const Student = require('../models/studentSchema.js');
@@ -107,40 +108,39 @@ const adminRegister = async (req, res) => {
 
 const adminLogIn = async (req, res) => {
     try {
-        if (req.body.email && req.body.password) {
-            let admin = await Admin.findOne({ email: req.body.email });
-            if (admin) {
-                let validated = false;
-                if (isBcryptHash(admin.password)) {
-                    validated = await bcrypt.compare(req.body.password, admin.password);
-                } else if (req.body.password === admin.password) {
-                    const salt = await bcrypt.genSalt(10);
-                    admin.password = await bcrypt.hash(req.body.password, salt);
-                    await admin.save();
-                    validated = true;
-                }
+        const data = validateLoginBody(adminLoginSchema, req.body, res);
+        if (!data) return;
 
-                if (validated) {
-                    clearLoginFailures(req.loginAccountKey);
-                    const token = signToken(admin._id, 'Admin');
-                    res.send({
-                        token,
-                        user: {
-                            _id: admin._id,
-                            name: admin.name,
-                            email: admin.email,
-                            schoolName: admin.schoolName,
-                            role: 'Admin'
-                        }
-                    });
-                } else {
-                    return sendFailedLogin(req, res);
-                }
+        let admin = await Admin.findOne({ email: data.email });
+        if (admin) {
+            let validated = false;
+            if (isBcryptHash(admin.password)) {
+                validated = await bcrypt.compare(data.password, admin.password);
+            } else if (data.password === admin.password) {
+                const salt = await bcrypt.genSalt(10);
+                admin.password = await bcrypt.hash(data.password, salt);
+                await admin.save();
+                validated = true;
+            }
+
+            if (validated) {
+                clearLoginFailures(req.loginAccountKey);
+                const token = signToken(admin._id, 'Admin');
+                res.send({
+                    token,
+                    user: {
+                        _id: admin._id,
+                        name: admin.name,
+                        email: admin.email,
+                        schoolName: admin.schoolName,
+                        role: 'Admin'
+                    }
+                });
             } else {
                 return sendFailedLogin(req, res);
             }
         } else {
-            res.status(400).json({ message: "Email and password are required" });
+            return sendFailedLogin(req, res);
         }
     } catch (err) {
         res.status(500).json(err);
