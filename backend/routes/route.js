@@ -28,12 +28,15 @@ const {
 const { subjectCreate, classSubjects, deleteSubjectsByClass, getSubjectDetail, deleteSubject, freeSubjectList, allSubjects, deleteSubjects } = require('../controllers/subject-controller.js');
 const { teacherRegister, teacherLogIn, getTeachers, getTeacherDetail, deleteTeachers, deleteTeachersByClass, deleteTeacher, updateTeacherSubject, teacherAttendance } = require('../controllers/teacher-controller.js');
 const { me, refresh, logout } = require('../controllers/auth-controller.js');
+const { startGoogle, googleCallback } = require('../controllers/google-auth-controller.js');
 
 // Public auth
 router.post('/AdminReg', adminRegister);
 router.post('/AdminLogin', loginIpLimiter, checkAccountLockout('Admin'), adminLogIn);
 router.post('/StudentLogin', loginIpLimiter, checkAccountLockout('Student'), studentLogIn);
 router.post('/TeacherLogin', loginIpLimiter, checkAccountLockout('Teacher'), teacherLogIn);
+router.get('/auth/google', startGoogle);
+router.get('/auth/google/callback', googleCallback);
 router.post('/auth/refresh', refresh);
 router.post('/auth/logout', logout);
 router.get('/auth/me', authenticate, me);

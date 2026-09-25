@@ -3,6 +3,7 @@ const Admin = require("../models/adminSchema.js");
 const Student = require("../models/studentSchema.js");
 const Teacher = require("../models/teacherSchema.js");
 const { setAuthCookies, clearAuthCookies } = require("../utils/authCookies.js");
+const { getActiveSession, revokeSession } = require("../utils/sessions.js");
 
 const stripPassword = (doc) => {
     if (!doc) return null;
@@ -60,7 +61,12 @@ const refresh = async (req, res) => {
             token,
             process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET
         );
-        setAuthCookies(res, { _id: decoded.sub, role: decoded.role });
+        const session = await getActiveSession(decoded.jti);
+        if (!session || session.userId.toString() !== decoded.sub || session.role !== decoded.role) {
+            clearAuthCookies(res);
+            return res.status(401).json({ message: "Session revoked" });
+        }
+        setAuthCookies(res, { _id: decoded.sub, role: decoded.role }, decoded.jti);
         return res.json({ success: true });
     } catch (err) {
         clearAuthCookies(res);
@@ -68,7 +74,26 @@ const refresh = async (req, res) => {
     }
 };
 
+const readJti = (token, secret) => {
+    if (!token) return null;
+    try {
+        return jwt.verify(token, secret).jti || null;
+    } catch (err) {
+        return null;
+    }
+};
+
 const logout = async (req, res) => {
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+    const jti = readJti(req.cookies && req.cookies.refreshToken, refreshSecret)
+        || readJti(req.cookies && req.cookies.accessToken, process.env.JWT_SECRET);
+
+    try {
+        await revokeSession(jti);
+    } catch (err) {
+        // Still clear the browser cookies if the database update fails.
+    }
+
     clearAuthCookies(res);
     return res.json({ success: true, message: "Logged out" });
 };

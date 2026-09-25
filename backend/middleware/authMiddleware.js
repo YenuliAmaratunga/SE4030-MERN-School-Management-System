@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const Admin = require('../models/adminSchema');
 const Student = require('../models/studentSchema');
 const Teacher = require('../models/teacherSchema');
+const { getActiveSession } = require('../utils/sessions');
 
 const modelsByRole = {
     Admin,
@@ -30,11 +31,16 @@ const authenticate = async (req, res, next) => {
     }
 
     const Model = modelsByRole[payload.role];
-    if (!Model || !payload.sub) {
+    if (!Model || !payload.sub || !payload.jti) {
         return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
     try {
+        const session = await getActiveSession(payload.jti);
+        if (!session || session.userId.toString() !== payload.sub || session.role !== payload.role) {
+            return res.status(401).json({ message: 'Session revoked' });
+        }
+
         const account = await Model.findById(payload.sub);
         if (!account) {
             return res.status(401).json({ message: 'Invalid or expired token' });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Grid, Box, Typography, Paper, Checkbox, FormControlLabel, TextField, CssBaseline, IconButton, InputAdornment, CircularProgress, Backdrop, Alert } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -16,6 +16,7 @@ const LoginPage = ({ role }) => {
 
     const dispatch = useDispatch()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
 
     const { status, currentUser, response, error, currentRole } = useSelector(state => state.user);;
 
@@ -97,6 +98,15 @@ const LoginPage = ({ role }) => {
             dispatch(loginUser(fields, role))
         }
     }
+
+    useEffect(() => {
+        const oauthError = searchParams.get('oauthError');
+        if (oauthError) {
+            setAuthNotice({ severity: 'error', text: oauthError });
+            setMessage(oauthError);
+            setShowPopup(true);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (status === 'success' || currentUser !== null) {
@@ -246,6 +256,18 @@ const LoginPage = ({ role }) => {
                                     <CircularProgress size={24} color="inherit" />
                                     : "Login"}
                             </LightPurpleButton>
+                            {role !== "Student" && (
+                                <Button
+                                    fullWidth
+                                    variant="outlined"
+                                    sx={{ mt: 2, color: "#7f56da", borderColor: "#7f56da" }}
+                                    onClick={() => {
+                                        window.location.href = `${process.env.REACT_APP_BASE_URL}/auth/google?role=${role}`;
+                                    }}
+                                >
+                                    Continue with Google
+                                </Button>
+                            )}
                             <Button
                                 fullWidth
                                 onClick={guestModeHandler}

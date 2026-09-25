@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { setAuthCookies } = require('../utils/authCookies.js');
+const { issueAuthSession } = require('../utils/sessions.js');
 const Teacher = require('../models/teacherSchema.js');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
@@ -58,7 +58,7 @@ const teacherLogIn = async (req, res) => {
                 teacher = await teacher.populate("teachSubject", "subName sessions")
                 teacher = await teacher.populate("school", "schoolName")
                 teacher = await teacher.populate("teachSclass", "sclassName")
-                setAuthCookies(res, teacher);
+                await issueAuthSession(res, teacher);
                 res.send({
                     user: {
                         _id: teacher._id,

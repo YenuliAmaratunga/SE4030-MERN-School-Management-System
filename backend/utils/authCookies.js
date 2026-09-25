@@ -10,23 +10,23 @@ const cookieBase = () => ({
     path: "/",
 });
 
-const signAccess = (user) =>
+const signAccess = (user, jti) =>
     jwt.sign(
-        { sub: String(user._id), role: user.role },
+        { sub: String(user._id), role: user.role, jti },
         process.env.JWT_SECRET,
         { expiresIn: "15m" }
     );
 
-const signRefresh = (user) =>
+const signRefresh = (user, jti) =>
     jwt.sign(
-        { sub: String(user._id), role: user.role },
+        { sub: String(user._id), role: user.role, jti },
         process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
         { expiresIn: "7d" }
     );
 
-const setAuthCookies = (res, user) => {
-    res.cookie("accessToken", signAccess(user), { ...cookieBase(), maxAge: ACCESS_MS });
-    res.cookie("refreshToken", signRefresh(user), { ...cookieBase(), maxAge: REFRESH_MS });
+const setAuthCookies = (res, user, jti) => {
+    res.cookie("accessToken", signAccess(user, jti), { ...cookieBase(), maxAge: ACCESS_MS });
+    res.cookie("refreshToken", signRefresh(user, jti), { ...cookieBase(), maxAge: REFRESH_MS });
 };
 
 const clearAuthCookies = (res) => {
@@ -35,4 +35,4 @@ const clearAuthCookies = (res) => {
     res.clearCookie("refreshToken", base);
 };
 
-module.exports = { setAuthCookies, clearAuthCookies, signAccess };
+module.exports = { setAuthCookies, clearAuthCookies, REFRESH_MS };
