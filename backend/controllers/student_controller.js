@@ -120,29 +120,8 @@ const getStudentDetail = async (req, res) => {
         }
 
         // Context-Aware Attribute-Based Access Control (ABAC) Guard - CWE-639 / BOLA
-        const requesterId = req.user?.id || req.user?._id?.toString();
-        const requesterRole = req.user?.role;
-
-        // 1. Student self-access: student can only access their own record
-        const isSelf = requesterRole === 'Student' && requesterId === student._id.toString();
-
-        // 2. Assigned class teacher access: teacher must teach the student's assigned class
-        let isAssignedTeacher = false;
-        if (requesterRole === 'Teacher') {
-            const teacher = await Teacher.findById(requesterId);
-            const studentClassId = student.sclassName?._id || student.sclassName;
-            if (teacher && teacher.teachSclass && studentClassId && teacher.teachSclass.toString() === studentClassId.toString()) {
-                isAssignedTeacher = true;
-            }
-        }
-
-        // 3. School admin access: admin must belong to the same school
-        const studentSchoolId = (student.school?._id || student.school)?.toString();
-        const isSchoolAdmin = requesterRole === 'Admin' && req.user?.schoolId === studentSchoolId;
-
-        // Verify authorization boundaries
-        // Standardize unauthorized entity responses to generic 404 Not Found to prevent identifier enumeration (CWE-200)
-        if (!isSelf && !isAssignedTeacher && !isSchoolAdmin) {
+        const authorized = await isAuthorizedForStudent(req, student, true);
+        if (!authorized) {
             return res.status(404).json({ message: "No student found" });
         }
 
@@ -153,12 +132,66 @@ const getStudentDetail = async (req, res) => {
     }
 }
 
+/**
+ * Context-Aware ABAC Authorization Guard for Student Entities (CWE-639 / BOLA & Multi-Tenant Isolation)
+ * @param {object} req - Express request object containing req.user
+ * @param {object} student - Student Mongoose document
+ * @param {boolean} allowSelf - Whether self-access is allowed (e.g., read own profile vs modify grades)
+ * @returns {Promise<boolean>} True if authorized, false otherwise
+ */
+const isAuthorizedForStudent = async (req, student, allowSelf = false) => {
+    if (!student || !req.user) return false;
+
+    const requesterId = req.user.id || req.user._id?.toString();
+    const requesterRole = req.user.role;
+    const studentSchoolId = (student.school?._id || student.school)?.toString();
+
+    // 1. Student self-access: student can only access their own record for read operations
+    if (allowSelf && requesterRole === 'Student' && requesterId === student._id.toString()) {
+        return true;
+    }
+
+    // 2. School Admin access: admin must belong to the exact same school tenant
+    if (requesterRole === 'Admin' && req.user.schoolId === studentSchoolId) {
+        return true;
+    }
+
+    // 3. Assigned Class Teacher access: teacher must teach the student's assigned class AND belong to the same school tenant
+    if (requesterRole === 'Teacher') {
+        const teacher = await Teacher.findById(requesterId);
+        const teacherSchoolId = (teacher?.school?._id || teacher?.school)?.toString();
+        const studentClassId = (student.sclassName?._id || student.sclassName)?.toString();
+
+        if (
+            teacher &&
+            teacher.teachSclass &&
+            teacherSchoolId &&
+            teacherSchoolId === studentSchoolId &&
+            teacher.teachSclass.toString() === studentClassId
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
 const deleteStudent = async (req, res) => {
     try {
-        const result = await Student.findByIdAndDelete(req.params.id)
-        res.send(result)
+        const student = await Student.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
+        const authorized = await isAuthorizedForStudent(req, student, false);
+        if (!authorized) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
+        const result = await Student.findByIdAndDelete(req.params.id);
+        res.send(result);
     } catch (error) {
-        res.status(500).json(err);
+        res.status(500).json(error);
     }
 }
 
@@ -171,7 +204,7 @@ const deleteStudents = async (req, res) => {
             res.send(result)
         }
     } catch (error) {
-        res.status(500).json(err);
+        res.status(500).json(error);
     }
 }
 
@@ -184,7 +217,7 @@ const deleteStudentsByClass = async (req, res) => {
             res.send(result)
         }
     } catch (error) {
-        res.status(500).json(err);
+        res.status(500).json(error);
     }
 }
 
@@ -192,6 +225,16 @@ const updateStudent = async (req, res) => {
     try {
         const data = sendValidationError(res, updateStudentDto(req.body));
         if (!data) return;
+
+        const student = await Student.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
+        const authorized = await isAuthorizedForStudent(req, student, false);
+        if (!authorized) {
+            return res.status(404).json({ message: "No student found" });
+        }
 
         const update = {
             name: data.name,
@@ -221,7 +264,13 @@ const updateExamResult = async (req, res) => {
         const student = await Student.findById(req.params.id);
 
         if (!student) {
-            return res.send({ message: 'Student not found' });
+            return res.status(404).json({ message: 'No student found' });
+        }
+
+        // BOLA / IDOR Guard on Exam Result Mutation (CWE-639)
+        const authorized = await isAuthorizedForStudent(req, student, false);
+        if (!authorized) {
+            return res.status(404).json({ message: 'No student found' });
         }
 
         const existingResult = student.examResult.find(
@@ -250,7 +299,13 @@ const studentAttendance = async (req, res) => {
         const student = await Student.findById(req.params.id);
 
         if (!student) {
-            return res.send({ message: 'Student not found' });
+            return res.status(404).json({ message: 'No student found' });
+        }
+
+        // BOLA / IDOR Guard on Student Attendance Mutation (CWE-639)
+        const authorized = await isAuthorizedForStudent(req, student, false);
+        if (!authorized) {
+            return res.status(404).json({ message: 'No student found' });
         }
 
         const subject = await Subject.findById(subName);

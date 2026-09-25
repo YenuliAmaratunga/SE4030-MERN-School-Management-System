@@ -32,12 +32,23 @@ const studentLoginSchema = z.object({
         .min(1, 'Student name cannot be empty'),
     rollNum: z.union(
         [
-            z.number({ invalid_type_error: 'Roll number must be a number' }).int().positive(),
+            z
+                .number({ invalid_type_error: 'Roll number must be a number' })
+                .int('Roll number must be an integer')
+                .positive('Roll number must be a positive integer')
+                .finite('Roll number must be a finite number'),
             z
                 .string({ invalid_type_error: 'Roll number must be a number' })
                 .trim()
-                .regex(/^\d+$/, 'Roll number must be a positive integer')
-                .transform(Number),
+                .regex(/^[1-9]\d*$/, 'Roll number must be a positive integer')
+                .transform((val) => Number(val))
+                .pipe(
+                    z
+                        .number({ invalid_type_error: 'Roll number must be a number' })
+                        .int('Roll number must be an integer')
+                        .positive('Roll number must be a positive integer')
+                        .finite('Roll number must be a finite number')
+                ),
         ],
         {
             required_error: 'Roll number is required',
