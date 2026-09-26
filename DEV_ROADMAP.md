@@ -100,39 +100,28 @@ main (Production / Stable Baseline)
 
 ### 🛡️ Vulnerability 2: BOLA / IDOR on Student Academic Records
 * **OWASP / CWE:** A01:2021 – Broken Access Control | **CWE-639 / API1:2023**
-* **Location:** `backend/controllers/student_controller.js` (`getStudentDetail: GET /Student/:id`)
-* **Vulnerability:** Any authenticated student can view or modify any other student's confidential marks, grades, and attendance records by altering the ID in the URL.
+* **Location:** `backend/controllers/student_controller.js` (`getStudentDetail`, `updateStudent`, `updateExamResult`, `studentAttendance`, `deleteStudent`)
+* **Vulnerability:** Unauthenticated/unauthorized students or cross-tenant teachers could read, modify, or tamper with confidential student marks, grades, and attendance records by altering the ID in the URL parameter.
 * **Remediation:**
-  ```javascript
-  const student = await Student.findById(req.params.id);
-  if (!student) return res.status(404).json({ message: 'Student not found' });
-
-  const isSelf = req.user.role === 'Student' && req.user._id.toString() === student._id.toString();
-  const isClassTeacher = req.user.role === 'Teacher' && req.user.teachSclass.equals(student.sclassName);
-  const isAdmin = req.user.role === 'Admin';
-
-  if (!isSelf && !isClassTeacher && !isAdmin) {
-    return res.status(404).json({ message: 'Student not found' }); // Return 404 to avoid ID harvesting
-  }
-  res.json(student);
-  ```
+  1. Centralized **Context-Aware Attribute-Based Access Control (ABAC)** guard (`isAuthorizedForStudent`):
+     - **Self-Access:** Students may view only their own record; disallowed from altering grades/attendance.
+     - **School Admin Access:** Strictly scoped to administrators belonging to the exact same school tenant (`req.user.schoolId === student.school`).
+     - **Class Teacher Access (Multi-Tenant Isolation):** Enforces dual-condition matching: teacher must belong to the same school AND be assigned to the student's specific class (`teacherSchoolId === studentSchoolId && teacher.teachSclass === student.sclassName`).
+  2. **Identifier Enumeration Neutralization (CWE-200):** Unifies all unauthorized access rejections to generic `404 Not Found` with `{ "message": "No student found" }`, eliminating side-channel ID harvesting.
+  3. **Full Lifecycle Protection:** Enforces the ABAC guard across read (`getStudentDetail`) and mutation endpoints (`updateStudent`, `updateExamResult`, `studentAttendance`, `deleteStudent`).
 
 ---
 
 ### 🛡️ Vulnerability 3: NoSQL Operator Query Injection
 * **OWASP / CWE:** A03:2021 – Injection | **CWE-943**
-* **Location:** `backend/controllers/admin-controller.js` (`adminSignIn`), `student_controller.js` (`studentSignIn`)
-* **Vulnerability:** Unsanitized JSON payloads allow attackers to pass MongoDB query operators (`{"email": {"$gt": ""}}`), bypassing password authentication.
+* **Location:** `backend/controllers/admin-controller.js` (`adminLogIn`), `student_controller.js` (`studentLogIn`), `teacher-controller.js` (`teacherLogIn`), `backend/dto/loginDto.js`, `backend/index.js`
+* **Vulnerability:** Unsanitized JSON payloads allow attackers to pass MongoDB query operators (`{"email": {"$gt": ""}}`, `{"rollNum": {"$ne": null}}`), triggering unhandled server exceptions or bypassing authentication.
 * **Remediation:**
-  1. Register `express-mongo-sanitize` globally to strip `$` and `.` operators.
-  2. Implement runtime type-contract verification using **Zod**:
-     ```javascript
-     const loginSchema = z.object({
-       email: z.string().email(),
-       password: z.string().min(6)
-     });
-     const { email, password } = loginSchema.parse(req.body);
-     ```
+  1. **Global AST-Level Sanitization:** Register `express-mongo-sanitize` middleware in `index.js` to strip `$` and `.` operators from `req.body`, `req.query`, and `req.params`.
+  2. **Strict Runtime Type Contracts via Zod:**
+     - Validate incoming payloads against strict Zod schemas (`adminLoginSchema`, `studentLoginSchema`, `teacherLoginSchema`) before any database operation.
+     - For student logins, enforce that `rollNum` converts strictly to a **finite positive integer** ($\ge 1$), rejecting non-numeric types, objects, strings representing `0`, negative numbers, and `Infinity` via a dual validation-transformation pipeline.
+  3. **Standardized Error Boundary:** Invalid payloads fail fast with `400 Bad Request` and structured `VALIDATION_ERROR` details before reaching the Mongoose driver.
 
 ---
 

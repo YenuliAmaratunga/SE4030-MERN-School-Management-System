@@ -3,6 +3,7 @@ const cors = require("cors")
 const mongoose = require("mongoose")
 const dotenv = require("dotenv")
 const cookieParser = require("cookie-parser")
+const mongoSanitize = require("express-mongo-sanitize")
 const securityHeaders = require("./middleware/securityHeaders.js")
 const app = express()
 const Routes = require("./routes/route.js")
@@ -13,6 +14,12 @@ const PORT = process.env.PORT || 5000
 
 app.use(securityHeaders)
 app.use(express.json({ limit: '10mb' }))
+app.use(mongoSanitize({
+    replaceWith: '_',
+    onSanitize: ({ req, key }) => {
+        console.warn(`[SECURITY] Stripped forbidden NoSQL query operator key '${key}' from ${req.ip}`);
+    }
+}))
 app.use(cookieParser())
 app.use(cors({
     origin: process.env.CLIENT_URL || "http://localhost:3000",

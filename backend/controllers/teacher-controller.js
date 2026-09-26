@@ -3,6 +3,7 @@ const { issueAuthSession } = require('../utils/sessions.js');
 const Teacher = require('../models/teacherSchema.js');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
+const { teacherLoginSchema, validateLoginBody } = require('../dto/loginDto');
 const {
     teacherRegisterDto,
     assignTeacherSubjectDto,
@@ -46,13 +47,12 @@ const teacherRegister = async (req, res) => {
 
 const teacherLogIn = async (req, res) => {
     try {
-        if (!req.body.email || !req.body.password) {
-            return res.status(400).json({ message: "Email and password are required" });
-        }
+        const data = validateLoginBody(teacherLoginSchema, req.body, res);
+        if (!data) return;
 
-        let teacher = await Teacher.findOne({ email: req.body.email });
+        let teacher = await Teacher.findOne({ email: data.email });
         if (teacher) {
-            const validated = await bcrypt.compare(req.body.password, teacher.password);
+            const validated = await bcrypt.compare(data.password, teacher.password);
             if (validated) {
                 clearLoginFailures(req.loginAccountKey);
                 teacher = await teacher.populate("teachSubject", "subName sessions")
