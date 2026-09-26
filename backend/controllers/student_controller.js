@@ -370,9 +370,24 @@ const removeStudentAttendanceBySubject = async (req, res) => {
     const data = sendValidationError(res, removeSubjectAttendanceDto(req.body));
     if (!data) return;
     const studentId = req.params.id;
-    const subName = data.subId
+    const subName = data.subId;
 
     try {
+        if (!mongoose.Types.ObjectId.isValid(studentId)) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
+        const student = await Student.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
+        // BOLA / IDOR Guard on Student Attendance Deletion (CWE-639)
+        const authorized = await isAuthorizedForStudent(req, student, false);
+        if (!authorized) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
         const result = await Student.updateOne(
             { _id: studentId },
             { $pull: { attendance: { subName: subName } } }
@@ -389,6 +404,21 @@ const removeStudentAttendance = async (req, res) => {
     const studentId = req.params.id;
 
     try {
+        if (!mongoose.Types.ObjectId.isValid(studentId)) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
+        const student = await Student.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
+        // BOLA / IDOR Guard on Student Attendance Reset (CWE-639)
+        const authorized = await isAuthorizedForStudent(req, student, false);
+        if (!authorized) {
+            return res.status(404).json({ message: "No student found" });
+        }
+
         const result = await Student.updateOne(
             { _id: studentId },
             { $set: { attendance: [] } }
