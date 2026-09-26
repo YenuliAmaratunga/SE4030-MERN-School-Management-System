@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const Admin = require('../models/adminSchema.js');
-const { signToken } = require('../utils/token');
+const { issueAuthSession } = require('../utils/sessions.js');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { adminRegisterDto } = require('../dto/adminDto');
 const { adminLoginSchema, validateLoginBody } = require('../dto/loginDto');
@@ -89,9 +89,8 @@ const adminRegister = async (req, res) => {
         }
         else {
             let result = await admin.save();
-            const token = signToken(result._id, 'Admin');
+            await issueAuthSession(res, result);
             res.send({
-                token,
                 user: {
                     _id: result._id,
                     name: result.name,
@@ -125,9 +124,8 @@ const adminLogIn = async (req, res) => {
 
             if (validated) {
                 clearLoginFailures(req.loginAccountKey);
-                const token = signToken(admin._id, 'Admin');
+                await issueAuthSession(res, admin);
                 res.send({
-                    token,
                     user: {
                         _id: admin._id,
                         name: admin.name,

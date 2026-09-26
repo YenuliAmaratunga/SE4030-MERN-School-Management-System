@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const { issueAuthSession } = require('../utils/sessions.js');
 const Student = require('../models/studentSchema.js');
 const Teacher = require('../models/teacherSchema.js');
-const { signToken } = require('../utils/token');
 const { clearLoginFailures, sendFailedLogin } = require('../utils/loginLockout');
 const { sendValidationError } = require('../dto/validate');
 const { studentLoginSchema, validateLoginBody } = require('../dto/loginDto');
@@ -64,9 +64,8 @@ const studentLogIn = async (req, res) => {
                 clearLoginFailures(req.loginAccountKey);
                 student = await student.populate("school", "schoolName")
                 student = await student.populate("sclassName", "sclassName")
-                const token = signToken(student._id, 'Student');
+                await issueAuthSession(res, student);
                 res.send({
-                    token,
                     user: {
                         _id: student._id,
                         name: student.name,

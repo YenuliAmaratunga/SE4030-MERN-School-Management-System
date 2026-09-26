@@ -5,9 +5,9 @@ const initialState = {
     userDetails: [],
     tempDetails: [],
     loading: false,
-    currentUser: JSON.parse(localStorage.getItem('user')) || null,
-    currentRole: (JSON.parse(localStorage.getItem('user')) || {}).role || null,
-    token: localStorage.getItem('token') || null,
+    currentUser: null,
+    currentRole: null,
+    sessionChecked: false,
     error: null,
     response: null,
     darkMode: true
@@ -32,11 +32,11 @@ const userSlice = createSlice({
         },
         authSuccess: (state, action) => {
             state.status = 'success';
-            state.currentUser = action.payload.user;
-            state.currentRole = action.payload.user.role;
-            state.token = action.payload.token;
-            localStorage.setItem('user', JSON.stringify(action.payload.user));
-            localStorage.setItem('token', action.payload.token);
+            state.currentUser = action.payload;
+            state.currentRole = action.payload.role;
+            state.sessionChecked = true;
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
             state.response = null;
             state.error = null;
         },
@@ -52,10 +52,10 @@ const userSlice = createSlice({
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             state.currentUser = null;
-            state.token = null;
             state.status = 'idle';
             state.error = null;
-            state.currentRole = null
+            state.currentRole = null;
+            state.sessionChecked = true;
         },
 
         doneSuccess: (state, action) => {
