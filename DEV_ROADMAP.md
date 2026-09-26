@@ -100,7 +100,7 @@ main (Production / Stable Baseline)
 
 ### 🛡️ Vulnerability 2: BOLA / IDOR on Student Academic Records
 * **OWASP / CWE:** A01:2021 – Broken Access Control | **CWE-639 / API1:2023**
-* **Location:** `backend/controllers/student_controller.js` (`getStudentDetail`, `updateStudent`, `updateExamResult`, `studentAttendance`, `deleteStudent`)
+* **Location:** `backend/controllers/student_controller.js` (`getStudentDetail`, `updateStudent`, `updateExamResult`, `studentAttendance`, `removeStudentAttendanceBySubject`, `removeStudentAttendance`, `deleteStudent`)
 * **Vulnerability:** Unauthenticated/unauthorized students or cross-tenant teachers could read, modify, or tamper with confidential student marks, grades, and attendance records by altering the ID in the URL parameter.
 * **Remediation:**
   1. Centralized **Context-Aware Attribute-Based Access Control (ABAC)** guard (`isAuthorizedForStudent`):
@@ -108,7 +108,7 @@ main (Production / Stable Baseline)
      - **School Admin Access:** Strictly scoped to administrators belonging to the exact same school tenant (`req.user.schoolId === student.school`).
      - **Class Teacher Access (Multi-Tenant Isolation):** Enforces dual-condition matching: teacher must belong to the same school AND be assigned to the student's specific class (`teacherSchoolId === studentSchoolId && teacher.teachSclass === student.sclassName`).
   2. **Identifier Enumeration Neutralization (CWE-200):** Unifies all unauthorized access rejections to generic `404 Not Found` with `{ "message": "No student found" }`, eliminating side-channel ID harvesting.
-  3. **Full Lifecycle Protection:** Enforces the ABAC guard across read (`getStudentDetail`) and mutation endpoints (`updateStudent`, `updateExamResult`, `studentAttendance`, `deleteStudent`).
+  3. **Full Lifecycle Protection:** Enforces the ABAC guard across read (`getStudentDetail`) and all single-student mutation endpoints (`updateStudent`, `updateExamResult`, `studentAttendance`, `removeStudentAttendanceBySubject`, `removeStudentAttendance`, `deleteStudent`).
 
 ---
 
