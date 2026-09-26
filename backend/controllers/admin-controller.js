@@ -123,7 +123,7 @@ const adminLogIn = async (req, res) => {
             }
 
             if (validated) {
-                clearLoginFailures(req.loginAccountKey);
+                clearLoginFailures(req.loginAccountKey); // Member 3 — success resets the lockout counter
                 await issueAuthSession(res, admin);
                 res.send({
                     user: {
@@ -135,10 +135,10 @@ const adminLogIn = async (req, res) => {
                     }
                 });
             } else {
-                return sendFailedLogin(req, res);
+                return sendFailedLogin(req, res); // Member 3 — same message for a wrong password
             }
         } else {
-            return sendFailedLogin(req, res);
+            return sendFailedLogin(req, res); // Member 3 — same message if the account does not exist
         }
     } catch (err) {
         res.status(500).json(err);

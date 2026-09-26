@@ -1,3 +1,5 @@
+// Member 3 — stored XSS fix. Clean notice and complaint text with DOMPurify.
+// Titles: no HTML. Details and complaints: only b, i, u, strong, em, br, p.
 const { JSDOM } = require('jsdom');
 const createDOMPurify = require('dompurify');
 

@@ -9,6 +9,7 @@ const {
     toPlainObject,
 } = require('../utils/sanitize');
 
+// Member 3 — stored XSS fix. Titles are plain text. Details keep basic formatting only.
 const sanitizeNoticeContent = (title, details) => ([
     sanitizePlainText(title, 'title'),
     sanitizeRichText(details, 'details'),
@@ -27,6 +28,7 @@ const noticeCreate = async (req, res) => {
         const data = sendValidationError(res, noticeCreateDto(req.body));
         if (!data) return;
 
+        // Clean the text before it is saved. Empty after cleaning is rejected.
         const [titleResult, detailsResult] = sanitizeNoticeContent(data.title, data.details);
         if (!titleResult.value || !detailsResult.value) {
             return res.status(400).json({
@@ -55,6 +57,7 @@ const noticeList = async (req, res) => {
         if (notices.length > 0) {
             const results = [];
             const payload = notices.map((notice) => {
+                // Clean again on read so an old unsafe row cannot come back out.
                 const [titleResult, detailsResult] = sanitizeNoticeContent(notice.title, notice.details);
                 results.push(titleResult, detailsResult);
                 return buildNoticeResponse(notice, titleResult, detailsResult);

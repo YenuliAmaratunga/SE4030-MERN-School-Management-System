@@ -1,3 +1,4 @@
+// Member 3 — stored XSS fix. Same rules as the server, used for the live preview.
 import DOMPurify from 'dompurify';
 
 const XSS_PATTERN = /<\s*(script|iframe|object|embed|svg|img|link|meta|style|form|video|audio|math|base)|javascript\s*:|vbscript\s*:|on\w+\s*=|data\s*:\s*text\/html|expression\s*\(/i;

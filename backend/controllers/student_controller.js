@@ -61,7 +61,7 @@ const studentLogIn = async (req, res) => {
         if (student) {
             const validated = await bcrypt.compare(data.password, student.password);
             if (validated) {
-                clearLoginFailures(req.loginAccountKey);
+                clearLoginFailures(req.loginAccountKey); // Member 3 — success resets the lockout counter
                 student = await student.populate("school", "schoolName")
                 student = await student.populate("sclassName", "sclassName")
                 await issueAuthSession(res, student);
@@ -76,10 +76,10 @@ const studentLogIn = async (req, res) => {
                     }
                 });
             } else {
-                return sendFailedLogin(req, res);
+                return sendFailedLogin(req, res); // Member 3 — same message for a wrong password
             }
         } else {
-            return sendFailedLogin(req, res);
+            return sendFailedLogin(req, res); // Member 3 — same message if the account does not exist
         }
     } catch (err) {
         res.status(500).json(err);

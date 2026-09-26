@@ -32,6 +32,7 @@ const { startGoogle, googleCallback } = require('../controllers/google-auth-cont
 
 // Public auth
 router.post('/AdminReg', adminRegister);
+// Member 3 — rate limit and account lockout on the three login routes only.
 router.post('/AdminLogin', loginIpLimiter, checkAccountLockout('Admin'), adminLogIn);
 router.post('/StudentLogin', loginIpLimiter, checkAccountLockout('Student'), studentLogIn);
 router.post('/TeacherLogin', loginIpLimiter, checkAccountLockout('Teacher'), teacherLogIn);

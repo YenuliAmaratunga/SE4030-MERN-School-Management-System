@@ -12,7 +12,7 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5000
 
-app.use(securityHeaders)
+app.use(securityHeaders) // Member 3 — CSP / Helmet on all API responses
 app.use(express.json({ limit: '10mb' }))
 app.use(mongoSanitize({
     replaceWith: '_',

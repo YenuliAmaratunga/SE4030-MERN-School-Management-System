@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, CircularProgress, Stack, TextField, Typography } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import Popup from '../../components/Popup';
-import { BlueButton } from '../../components/buttonStyles';
 import { addStuff } from '../../redux/userRelated/userHandle';
 import { useDispatch, useSelector } from 'react-redux';
 import SafeHtml from '../../components/SafeHtml';
@@ -23,6 +22,7 @@ const StudentComplain = () => {
     const [message, setMessage] = useState("");
     const [showPopup, setShowPopup] = useState(false);
 
+    // Member 3 — live preview. Unsafe HTML is stripped before the complaint is submitted.
     const complaintPreview = useMemo(() => sanitizeRichText(complaint), [complaint]);
 
     const fields = {
@@ -68,87 +68,58 @@ const StudentComplain = () => {
 
     return (
         <>
-            <Box
-                sx={{
-                    flex: '1 1 auto',
-                    alignItems: 'center',
-                    display: 'flex',
-                    justifyContent: 'center'
-                }}
-            >
-                <Box
-                    sx={{
-                        maxWidth: 550,
-                        px: 3,
-                        py: '100px',
-                        width: '100%'
-                    }}
-                >
-                    <div>
-                        <Stack spacing={1} sx={{ mb: 3 }}>
-                            <Typography variant="h4">Complain</Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Complaint text is sanitized before it is stored. Scripts and event handlers are removed.
-                            </Typography>
-                        </Stack>
-                        <form onSubmit={submitHandler}>
-                            <Stack spacing={3}>
-                                <TextField
-                                    fullWidth
-                                    label="Select Date"
-                                    type="date"
-                                    value={date}
-                                    onChange={(event) => setDate(event.target.value)} required
-                                    InputLabelProps={{
-                                        shrink: true,
-                                    }}
-                                />
-                                <TextField
-                                    fullWidth
-                                    label="Write your complain"
-                                    variant="outlined"
-                                    value={complaint}
-                                    onChange={(event) => {
-                                        setComplaint(event.target.value);
-                                    }}
-                                    required
-                                    multiline
-                                    maxRows={4}
-                                    inputProps={{ maxLength: COMPLAINT_MAX }}
-                                    helperText={`${complaint.length}/${COMPLAINT_MAX}`}
-                                />
-                                <Box
-                                    sx={{
-                                        p: 2,
-                                        borderRadius: 1,
-                                        border: '1px solid',
-                                        borderColor: complaintPreview.xssDetected ? 'warning.main' : 'divider',
-                                        bgcolor: complaintPreview.xssDetected ? 'warning.light' : 'action.hover',
-                                    }}
-                                >
-                                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                                        Sanitized preview
-                                        {complaintPreview.xssDetected ? ' — unsafe HTML detected' : ''}
-                                    </Typography>
-                                    {complaintPreview.value
-                                        ? <SafeHtml html={complaintPreview.value} allowMarkup />
-                                        : <Typography variant="body2">—</Typography>}
-                                </Box>
-                            </Stack>
-                            <BlueButton
-                                fullWidth
-                                size="large"
-                                sx={{ mt: 3 }}
-                                variant="contained"
-                                type="submit"
-                                disabled={loader}
-                            >
-                                {loader ? <CircularProgress size={24} color="inherit" /> : "Add"}
-                            </BlueButton>
-                        </form>
+            <div className="complainPage">
+                <form className="complainCard" onSubmit={submitHandler}>
+                    <h1 className="complainCardTitle">Add Complaint</h1>
+
+                    <div className="complainField">
+                        <div className="complainFieldHead">
+                            <label htmlFor="complain-date">Date</label>
+                        </div>
+                        <input
+                            id="complain-date"
+                            className="complainInput"
+                            type="date"
+                            value={date}
+                            onChange={(event) => setDate(event.target.value)}
+                            required
+                        />
                     </div>
-                </Box>
-            </Box>
+
+                    <div className="complainField">
+                        <div className="complainFieldHead">
+                            <label htmlFor="complain-text">Complaint</label>
+                            <span className="complainCount">{complaint.length}/{COMPLAINT_MAX}</span>
+                        </div>
+                        <textarea
+                            id="complain-text"
+                            className="complainInput complainTextarea"
+                            placeholder="Write your complaint..."
+                            value={complaint}
+                            maxLength={COMPLAINT_MAX}
+                            onChange={(event) => setComplaint(event.target.value)}
+                            required
+                            rows={5}
+                        />
+                    </div>
+
+                    <div className={`complainPreview ${complaintPreview.xssDetected ? 'complainPreviewWarn' : ''}`}>
+                        <div className="complainPreviewHead">
+                            <strong>Sanitized preview</strong>
+                            {complaintPreview.xssDetected && <span className="complainBadge">Unsafe HTML detected</span>}
+                        </div>
+                        <p>
+                            {complaintPreview.value
+                                ? <SafeHtml html={complaintPreview.value} allowMarkup />
+                                : '—'}
+                        </p>
+                    </div>
+
+                    <button className="complainSubmit" type="submit" disabled={loader}>
+                        {loader ? <CircularProgress size={22} color="inherit" /> : 'Add complaint'}
+                    </button>
+                </form>
+            </div>
             <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
         </>
     );

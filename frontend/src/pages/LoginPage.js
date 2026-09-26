@@ -121,6 +121,7 @@ const LoginPage = ({ role }) => {
             }
         }
         else if (status === 'failed') {
+            // Member 3 — keep the lockout message on screen. The old popup disappeared after 2 seconds.
             const text = response || 'Login failed';
             const locked = /locked|too many login attempts/i.test(text);
             setAuthNotice({ severity: locked ? 'warning' : 'error', text, locked });
@@ -157,13 +158,15 @@ const LoginPage = ({ role }) => {
                         <Typography variant="h7">
                             Welcome back! Please enter your details
                         </Typography>
-                        <Typography variant="caption" sx={{ mt: 1, color: "text.secondary", textAlign: "center" }}>
-                            After 5 failed attempts, this account is locked for 5 minutes.
-                        </Typography>
                         {authNotice && (
-                            <Alert severity={authNotice.severity} sx={{ mt: 2, width: '100%' }}>
-                                {authNotice.text}
-                            </Alert>
+                            <>
+                                <Alert severity={authNotice.severity} sx={{ mt: 2, width: '100%' }}>
+                                    {authNotice.text}
+                                </Alert>
+                                <Typography variant="caption" sx={{ mt: 1, color: "text.secondary", textAlign: "center" }}>
+                                    After 5 failed attempts, this account is locked for 5 minutes.
+                                </Typography>
+                            </>
                         )}
                         <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 2 }}>
                             {role === "Student" ? (

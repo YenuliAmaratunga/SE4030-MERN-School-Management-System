@@ -1,3 +1,4 @@
+// Member 3 — stored XSS fix. Render notice and complaint text only after sanitizing it.
 import React from 'react';
 import { sanitizePlainText, sanitizeRichText } from '../utils/sanitize';
 

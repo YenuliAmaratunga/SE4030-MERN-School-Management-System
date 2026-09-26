@@ -1,3 +1,6 @@
+// Member 3 — login brute-force fix.
+// loginIpLimiter: 15 failed logins per IP per 15 minutes.
+// checkAccountLockout: reject a locked account before the password is checked.
 const rateLimit = require('express-rate-limit');
 const {
     accountKey,

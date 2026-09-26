@@ -20,6 +20,7 @@ const complainCreate = async (req, res) => {
         const data = sendValidationError(res, complainCreateDto(req.body));
         if (!data) return;
 
+        // Member 3 — stored XSS fix. Clean the complaint before it is saved.
         const complaintResult = sanitizeRichText(data.complaint, 'complaint');
         if (!complaintResult.value) {
             return res.status(400).json({
@@ -48,6 +49,7 @@ const complainList = async (req, res) => {
         if (complains.length > 0) {
             const results = [];
             const payload = complains.map((complain) => {
+                // Clean again on read so an old unsafe complaint cannot come back out.
                 const complaintResult = sanitizeRichText(complain.complaint, 'complaint');
                 results.push(complaintResult);
                 return buildComplainResponse(complain, complaintResult);

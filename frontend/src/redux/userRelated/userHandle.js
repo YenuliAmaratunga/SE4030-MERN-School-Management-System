@@ -26,6 +26,7 @@ export const loginUser = (fields, role) => async (dispatch) => {
             dispatch(authFailed(result.data.message));
         }
     } catch (error) {
+        // Member 3 — show the 401 / 429 lockout message instead of a generic network error.
         const message = error.response?.data?.message;
         if (message) {
             dispatch(authFailed(message));

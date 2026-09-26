@@ -1,3 +1,4 @@
+// Member 3 — stored XSS fix. Helmet adds CSP and security headers on every API response.
 const helmet = require('helmet');
 
 const securityHeaders = helmet({

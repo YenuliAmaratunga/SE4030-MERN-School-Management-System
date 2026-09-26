@@ -1,3 +1,5 @@
+// Member 3 — login brute-force fix. 5 failed attempts lock that account for 5 minutes.
+// Stored in memory, so restarting the backend clears a lockout during the demo.
 const MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS) || 5;
 const LOCKOUT_MS = (Number(process.env.LOGIN_LOCKOUT_MINUTES) || 5) * 60 * 1000;
 
@@ -102,6 +104,7 @@ const sendLockoutResponse = (res, lockout) => {
     });
 };
 
+// Wrong password and unknown user both return 401 "Invalid credentials". The 5th failure returns 429.
 const sendFailedLogin = (req, res) => {
     const key = req.loginAccountKey;
     const result = recordFailedLogin(key);

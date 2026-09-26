@@ -76,58 +76,173 @@ a {
   background-color: #313131;
 }
 
-.sanitizeHint {
-  max-width: 420px;
-  margin: 0 0 16px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: #444;
+.noticePage,
+.complainPage {
+  display: flex;
+  justify-content: center;
+  padding: 32px 20px 48px;
 }
 
-.sanitizeCount {
-  margin-top: 4px;
-  color: #666;
-  font-size: 12px;
+.noticeCard,
+.complainCard {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  padding: 28px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.sanitizeTextarea {
-  resize: vertical;
-  min-height: 90px;
-  font-family: inherit;
-}
-
-.sanitizePreview {
-  margin-top: 14px;
-  padding: 12px;
-  border: 1px solid #d0d0d0;
-  border-radius: 10px;
-  background: #f7f7f7;
-  max-width: 420px;
-}
-
-.sanitizePreview p {
-  margin: 8px 0 0;
-  font-size: 14px;
-}
-
-.sanitizePreview span {
+.noticeCardTitle,
+.complainCardTitle {
+  margin: 0;
+  font-size: 28px;
   font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #111;
 }
 
-.sanitizePreviewWarn {
-  border-color: #d97706;
-  background: #fff7ed;
+.noticeField,
+.complainField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.sanitizeBadge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
+.noticeFieldHead,
+.complainFieldHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.noticeFieldHead label,
+.complainFieldHead label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.noticeCount,
+.complainCount {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.noticeInput,
+.complainInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  color: #111;
+}
+
+.noticeInput:focus,
+.complainInput:focus {
+  outline: none;
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+.noticeTextarea,
+.complainTextarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+
+.noticePreview,
+.complainPreview {
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.noticePreviewHead,
+.complainPreviewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.noticePreview p,
+.complainPreview p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f2937;
+}
+
+.noticePreview p span,
+.complainPreview p span {
+  font-weight: 600;
+  color: #111;
+}
+
+.noticePreviewWarn,
+.complainPreviewWarn {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.noticeBadge,
+.complainBadge {
+  padding: 3px 8px;
   border-radius: 999px;
   background: #d97706;
   color: #fff;
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.noticeSubmit,
+.complainSubmit {
+  margin-top: 4px;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.noticeSubmit:hover:not(:disabled),
+.complainSubmit:hover:not(:disabled) {
+  background: #333;
+}
+
+.noticeSubmit:disabled,
+.complainSubmit:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+@media screen and (max-width: 600px) {
+  .noticePage,
+  .complainPage {
+    padding: 16px 12px 32px;
+  }
+
+  .noticeCard,
+  .complainCard {
+    padding: 20px 16px;
+  }
 }
 
 @media screen and (max-width: 480px) {
