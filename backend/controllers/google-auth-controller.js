@@ -42,17 +42,18 @@ const redirectWithError = (res, role, message) => {
     const loginPath = role === "Teacher" ? "/Teacherlogin" : "/Adminlogin";
     const url = new URL(loginPath, clientUrl());
     url.searchParams.set("oauthError", message);
-    res.clearCookie(STATE_COOKIE, cookieOptions());
+    const { maxAge, ...clearOptions } = cookieOptions();
+    res.clearCookie(STATE_COOKIE, clearOptions);
     return res.redirect(url.toString());
 };
 
 const startGoogle = (req, res) => {
     const client = googleClient();
+    const role = req.query.role === "Teacher" ? "Teacher" : "Admin";
     if (!client) {
-        return res.status(500).json({ message: "Google sign-in is not configured" });
+        return redirectWithError(res, role, "Google sign-in is not configured");
     }
 
-    const role = req.query.role === "Teacher" ? "Teacher" : "Admin";
     const state = crypto.randomBytes(16).toString("hex");
     const nonce = crypto.randomBytes(16).toString("hex");
 

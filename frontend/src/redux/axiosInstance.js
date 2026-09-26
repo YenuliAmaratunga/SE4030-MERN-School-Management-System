@@ -10,8 +10,11 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const original = error.config || {};
-        const url = original.url || '';
-        const skipRefresh = url.includes('/auth/refresh') || url.includes('/auth/logout');
+        const url = (original.url || '').split('?')[0];
+        const skipRefresh = url.endsWith('/auth/refresh')
+            || url.endsWith('/auth/logout')
+            || url.endsWith('Login')
+            || url.endsWith('Reg');
 
         if (error.response && error.response.status === 401 && !original._retry && !skipRefresh) {
             original._retry = true;
